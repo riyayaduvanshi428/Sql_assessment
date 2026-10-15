@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Assessment M4-A1 — Query Outputs & Verification Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #0b1120;
+            --surface-color: #1e293b;
+            --surface-hover: #334155;
+            --border-color: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-blue: #38bdf8;
+            --accent-green: #34d399;
+            --table-header: #0f172a;
+            --table-row-even: #1e293b;
+            --table-row-odd: #182234;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 2rem 1.5rem;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .badge {
+            display: inline-block;
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent-blue);
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+        }
+        h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1.25rem;
+            padding-top: 1.25rem;
+            border-top: 1px solid var(--border-color);
+        }
+        .meta-item span { display: block; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; }
+        .meta-item strong { font-size: 1rem; color: var(--accent-green); }
+        .nav-pills { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2rem; }
+        .nav-pill {
+            background: var(--surface-color);
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            border: 1px solid var(--border-color);
+        }
+        .nav-pill:hover { background: var(--surface-hover); color: #fff; }
+        .card {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+        .card-header {
+            background: #182234;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-title { font-size: 1.15rem; font-weight: 600; color: #fff; }
+        .tag { font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: #334155; color: #94a3b8; }
+        .card-body { padding: 1.5rem; }
+        .query-box {
+            background: #090d16;
+            border: 1px solid #1e293b;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.25rem;
+            font-family: ui-monospace, Menlo, Consolas, monospace;
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            overflow-x: auto;
+        }
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem; }
+        thead th {
+            background: var(--table-header);
+            color: var(--accent-blue);
+            font-weight: 600;
+            padding: 0.75rem 1rem;
+            border-bottom: 2px solid var(--border-color);
+            white-space: nowrap;
+        }
+        tbody tr:nth-child(even) { background: var(--table-row-even); }
+        tbody tr:nth-child(odd) { background: var(--table-row-odd); }
+        tbody tr:hover { background: #27354a; }
+        tbody td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); color: #e2e8f0; white-space: nowrap; }
+        .row-count { padding: 0.5rem 1rem; font-size: 0.75rem; color: var(--text-muted); background: #111827; border-top: 1px solid var(--border-color); text-align: right; }
+        .null { color: #ef4444; font-style: italic; font-weight: 600; }
+        footer { text-align: center; padding: 2rem 0; color: var(--text-muted); font-size: 0.875rem; border-top: 1px solid var(--border-color); margin-top: 3rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="badge">Assessment Output Report</div>
+            <h1>Module 4: SQL for Data Analytics</h1>
+            <p style="color: var(--text-muted);">Verified Query Outputs, Schemas & Analytical Result Sets</p>
+            <div class="meta-grid">
+                <div class="meta-item"><span>Program</span><strong>Data Analytics</strong></div>
+                <div class="meta-item"><span>Student Name</span><strong>Nilesh Sharma</strong></div>
+                <div class="meta-item"><span>Assessment Code</span><strong>M4-A1</strong></div>
+                <div class="meta-item"><span>Target Stack</span><strong>MySQL 8.0+</strong></div>
+                <div class="meta-item"><span>Status</span><strong>All Tests Passed (100%)</strong></div>
+            </div>
+        </header>
+
+        <nav class="nav-pills">
+            <a class="nav-pill" href="#task1">Task 1: Order Explorer</a>
+            <a class="nav-pill" href="#task2">Task 2: Revenue Summary</a>
+            <a class="nav-pill" href="#task3">Task 3: Joined Reports</a>
+            <a class="nav-pill" href="#task4">Task 4: Agent Ranking</a>
+            <a class="nav-pill" href="#capstone">Capstone C: Analytics Backend</a>
+            <a class="nav-pill" href="#section-d">Section D: AI Debugging</a>
+        </nav>
+
+        <!-- SECTION B - TASK 1 -->
+        <div class="card" id="task1">
+            <div class="card-header">
+                <div class="card-title">Task 1.1: Orders in Mumbai Sorted by Price Descending</div>
+                <div class="tag">SELECT &bull; WHERE &bull; ORDER BY</div>
+            </div>
+            <div class="card-body">
+                <div class="query-box"><pre>SELECT order_id, customer_name, restaurant_name, item_ordered, quantity, price_per_item, order_date, city
+FROM food_orders
+WHERE city = 'Mumbai'
+ORDER BY price_per_item DESC;</pre></div>
+                
+    <div class="table-container">
+        <table>
+            <thead><tr><th>order_id</th><th>customer_name</th><th>restaurant_name</th><th>item_ordered</th><th>quantity</th><th>price_per_item</th><th>order_date</th><th>city</th></tr></thead>
+            <tbody><tr><td>101</td><td>Aarav Patel</td><td>Trishna</td><td>Butter Garlic Crab</td><td>2</td><td>1250.0</td><td>2026-10-01</td><td>Mumbai</td></tr><tr><td>104</td><td>Sneha Joshi</td><td>Trishna</td><td>Prawn Koliwada</td><td>1</td><td>950.0</td><td>2026-10-04</td><td>Mumbai</td></tr><tr><td>108</td><td>Neha Gupta</td><td>Trishna</td><td>Surmai Fish Curry</td><td>1</td><td>890.0</td><td>2026-10-08</td><td>Mumbai</td></tr><tr><td>107</td><td>Karan Malhotra</td><td>Bademiya</td><td>Chicken Baida Roti</td><td>2</td><td>380.0</td><td>2026-10-07</td><td>Mumbai</td></tr></tbody>
+        </table>
+        <div class="row-count">4 row(s) in set</div>
+    </div>
+    
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Task 1.2: Distinct Restaurants with Orders</div>
+                <div class="tag">DISTINCT</div>
+            </div>
+            <div class="card-body">
+                <div class="query-box"><pre>SELECT DISTINCT restaurant_name
+FROM food_orders
+ORDER BY restaurant_name ASC;</pre></div>
+                
+    <div class="table-container">
+        <table>
+            <thead><tr><th>restaurant_name</th></tr></thead>
+            <tbody><tr><td>Bademiya</td></tr><tr><td>Bukhara</td></tr><tr><td>Karim s</td></tr><tr><td>Meghana Foods</td></tr><tr><td>Saravana Bhavan</td></tr><tr><td>Toit</td></tr><tr><td>Trishna</td></tr><tr><td>Vidyarthi Bhavan</td></tr></tbody>
+        </table>
+        <div class="row-count">8 row(s) in set</div>
+    </div>
+    
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Task 1.3: Top 5 Most Expensive Individual Orders</div>
+                <div class="tag">ORDER BY &bull; LIMIT</div>
+            </div>
+            <div class="card-body">
+                <div class="query-box"><pre>SELECT order_id, customer_name, restaurant_name, item_ordered, quantity, price_per_item, (quantity * price_per_item) AS total_order_value, city, order_date
+FROM food_orders
+ORDER BY total_order_value DESC
+LIMIT 5;</pre></div>
+                
+    <div class="table-container">
+        <table>
+            <thead><tr><th>order_id</th><th>customer_name</th><th>restaurant_name</th><th>item_ordered</th><th>quantity</th><th>price_per_item</th><th>total_order_value</th><th>city</th><th>order_date</th></tr></thead>
+            <tbody><tr><td>101</td><td>Aarav Patel</td><td>Trishna</td><td>Butter Garlic Crab</td><td>2</td><td>1250.0</td><td>2500.0</td><td>Mumbai</td><td>2026-10-01</td></tr><tr><td>103</td><td>Rohan Verma</td><td>Toit</td><td>Craft Beer & Pizza</td><td>3</td><td>620.0</td><td>1860.0</td><td>Bengaluru</td><td>2026-10-03</td></tr><tr><td>109</td><td>Aditya Rao</td><td>Meghana Foods</td><td>Special Chicken Biryani</td><td>3</td><td>390.0</td><td>1170.0</td><td>Bengaluru</td><td>2026-10-09</td></tr><tr><td>105</td><td>Vikram Mehta</td><td>Karim s</td><td>Mutton Korma</td><td>2</td><td>540.0</td><td>1080.0</td><td>Delhi</td><td>2026-10-05</td></tr><tr><td>104</td><td>Sneha Joshi</td><td>Trishna</td><td>Prawn Koliwada</td><td>1</td><td>950.0</td><td>950.0</td><td>Mumbai</td><td>2026-10-04</td></tr></tbody>
+        </table>
+        <div class="row-count">5 row(s) in set</div>
+    </div>
+    
+            </div>
+        </div>
+
+        <!-- SECTION B - TASK 2 -->
+        <div class="card" id="task2">
+            <div class="card-header">
+                <div class="card-title">Task 2: Restaurant Revenue Summary with HAVING and CASE WHEN</div>
+                <div class="tag">GROUP BY &bull; HAVING &bull; CASE WHEN &bull; AGGREGATES</div>
+            </div>
+            <div class="card-body">
+                <div class="query-box"><pre>SELECT 
+    restaurant_name,
+    COUNT(order_id) AS total_orders,
+    SUM(total_amount) AS total_revenue,
+    ROUND(AVG(total_amount), 2) AS avg_order_value,
+    CASE 
+        WHEN SUM(total_amount) > 10000 THEN 'High Revenue'
+        ELSE 'Moderate Revenue'
+    END AS revenue_category
+FROM delivery_orders
+GROUP BY restaurant_name
+HAVING SUM(total_amount) > 5000
+ORDER BY total_revenue DESC;</pre></div>
+                
+    <div class="table-container">
+        <table>
+            <thead><tr><th>restaurant_name</th><th>total_orders</th><th>total_revenue</th><th>avg_order_value</th><th>revenue_category</th></tr></thead>
+            <tbody><tr><td>Spice Hub</td><td>4</td><td>11550.0</td><td>2887.5</td><td>High Revenue</td></tr><tr><td>Royal Biryani</td><td>3</td><td>11100.0</td><td>3700.0</td><td>High Revenue</td></tr></tbody>
+        </table>
+        <div class="row-count">2 row(s) in set</div>
+    </div>
+    
+            </div>
+        </div>
+
+        <!-- SECTION B - TASK 3 -->
+        <div class="card" id="task3">
+            <div class="card-header">
+                <div class="card-title">Task 3.1: INNER JOIN (Orders with Customer & Restaurant Names)</div>
+                <div class="tag">INNER JOIN</div>
+            </div>
+            <div class="card-body">
+                <div class="query-box"><pre>SELECT o.order_id, c.name AS customer_name, r.name AS restaurant_name, o.amount, o.order_date
+FROM orders o
+INNER JOIN customers c ON o.customer_id = c.customer_id
+INNER JOIN restaurants r ON o.restaurant_id = r.restaurant_id
+ORDER BY o.order_id ASC;</pre></div>
+                
+    <div class="table-container">
+        <table>
+            <thead><tr><th>order_id</th><th>customer_name</th><th>restaurant_name</th><th>amount</th><th>order_date</th></tr></thead>
+            <tbody><tr><td>1001</td><td>Aarav Patel</td><td>Trishna</td><td>1850.0</td><td>2026-10-01</td></tr><tr><td>1002</td><td>Aarav Patel</td><td>Bademiya</td><td>950.0</td><td>2026-10-03</td></tr><tr><td>1003</td><td>Sneha Joshi</td><td>Bukhara</td><td>2100.0</td><td>2026-10-04</td></tr><tr><td>1004</td><td>Rohan Verma</td><td>Toit</td><td>1450.0</td><td>2026-10-05</td></tr><tr><td>1005</td><td>Priya Sharma</td><td>Bukhara</td><td>3200.0</td><td>2026-10-06</td></tr><tr><td>1006</td><td>Aditya Rao</td><td>Meghana Foods</td><td>890.0</td><td>2026-10-07</td></tr></tbody>
+        </table>
+        <div class="row-count">6 row(s) in set</div>
+    </div>
+    
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Task 3.2: LEFT JOIN (All Customers, Showing NULL for Customers Without Orders)</div>
+                <div class="tag">LEFT OUTER JOIN &bull; DATA PRESERVATION</div>
+            </div>
+            <div class="card-body">
+                <div class="query-box"><pre>SELECT c.customer_id, c.name AS customer_name, c.city AS customer_city, c.phone, o.order_id, o.amount AS order_amount, o.order_date
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+ORDER BY c.customer_id ASC, o.order_id ASC;</pre></div>
+                
+    <div class="table-container">
+        <table>
+            <thead><tr><th>customer_id</th><th>customer_name</th><th>customer_city</th><th>phone</th><th>order_id</th><th>order_amount</th><th>order_date</th></tr></thead>
+            <tbody><tr><td>1</td><td>Aarav Patel</td><td>Mumbai</td><td>9820112233</td><td>1001</td><td>1850.0</td><td>2026-10-01</td></tr><tr><td>1</td><td>Aarav Patel</td><td>Mumbai</td><td>9820112233</td><td>1002</td><td>950.0</td><td>2026-10-03</td></tr><tr><td>2</td><td>Sneha Joshi</td><td>Mumbai</td><td>9820223344</td><td>1003</td><td>2100.0</td><td>2026-10-04</td></tr><tr><td>3</td><td>Rohan Verma</td><td>Bengaluru</td><td>9845112233</td><td>1004</td><td>1450.0</td><td>2026-10-05</td></tr><tr><td>4</td><td>Priya Sharma</td><td>Delhi</td><td>9811112233</td><td>1005</td><td>3200.0</td><td>2026-10-06</td></tr><tr><td>5</td><td>Aditya Rao</td><td>Bengaluru</td><td>9845223344</td><td>1006</td><td>890.0</td><td>2026-10-07</td></tr><tr><td>6</td><td>Deepak Kumar</td><td>Mumbai</td><td>9820334455</td><td><span class="null">NULL</span></td><td><span class="null">NULL</span></td><td><span class="null">NULL</span></td></tr><tr><td>7</td><td>Meera Sen</td><td>Kolkata</td><td>9830112233</td><td><span class="null">NULL</span></td><td><span class="null">NULL</span></td><td><span class="null">NULL</span></td></tr></tbody>
+        </table>
+        <div class="row-count">8 row(s) in set</div>
+    </div>
+    
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Task 3.3: Same-City Orders Filtered via WHERE</div>
+                <div class="tag">WHERE PREDICATE ON JOINS</div>
+            </div>
+            <div class="card-body">
+                <div class="query-box"><pre>SELECT o.order_id, c.name AS customer_name, c.city AS customer_city, r.name AS restaurant_name, r.city AS restaurant_city, o.amount, o.order_date
+FROM orders o
+INNER JOIN customers c ON o.customer_id = c.customer_id
+INNER JOIN restaurants r ON o.restaurant_id = r.restaurant_id
+WHERE c.city = r.city
+ORDER BY o.order_id ASC;</pre></div>
+                
+    <div class="table-container">
+        <table>
+            <thead><tr><th>order_id</th><th>customer_name</th><th>customer_city</th><th>restaurant_name</th><th>restaurant_city</th><th>amount</th><th>order_date</th></tr></thead>
+            <tbody><tr><td>1001</td><td>Aarav Patel</td><td>Mumbai</td><td>Trishna</td><td>Mumbai</td><td>1850.0</td><td>2026-10-01</td></tr><tr><td>1002</td><td>Aarav Patel</td><td>Mumbai</td><td>Bademiya</td><td>Mumbai</td><td>950.0</td><td>2026-10-03</td></tr><tr><td>1004</td><td>Rohan Verma</td><td>Bengaluru</td><td>Toit</td><td>Bengaluru</td><td>1450.0</td><td>2026-10-05</td></tr><tr><td>1005</td><td>Priya Sharma</td><td>Delhi</td><td>Bukhara</td><td>Delhi</td><td>3200.0</td><td>2026-10-06</td></tr><tr><td>1006</td><td>Aditya Rao</td><td>Bengaluru</td><td>Meghana Foods</td><td>Bengaluru</td><td>890.0</td><td>2026-10-07</td></tr></tbody>
+        </table>
+        <div class="row-count">5 row(s) in set</div>
+    </div>
+    
+            </div>
+        </div>
+
+        <!-- SECTION B - TASK 4 -->
+        <div class="card" id="task4">
+            <div class="card-header">
+                <div class="card-title">Task 4: Delivery Agent Speed Ranking</div>
+                <div class="tag">CTE &bull; RANK() &bull; SCALAR SUBQUERY &bull; CASE WHEN</div>
+            </div>
+            <div class="card-body">
+                <div class="query-box"><pre>WITH agent_stats AS (
+    SELECT 
+        agent_name,
+        COUNT(delivery_id) AS total_deliveries,
+        ROUND(AVG(delivery_time_mins), 2) AS avg_delivery_time
+    FROM deliveries
+    GROUP BY agent_name
+)
+SELECT 
+    agent_name,
+    total_deliveries,
+    avg_delivery_time,
+    RANK() OVER (ORDER BY avg_delivery_time ASC) AS speed_rank,
+    ROUND((SELECT AVG(delivery_time_mins) FROM deliveries), 2) AS platform_avg_time,
+    CASE 
+        WHEN avg_delivery_time <= (SELECT AVG(delivery_time_mins) FROM deliveries) THEN 'On Track'
+        ELSE 'Needs Improvement'
+    END AS performance_status
+FROM agent_stats
+ORDER BY speed_rank ASC;</pre></div>
+                
+    <div class="table-container">
+        <table>
+            <thead><tr><th>agent_name</th><th>total_deliveries</th><th>avg_delivery_time</th><th>speed_rank</th><th>platform_avg_time</th><th>performance_status</th></tr></thead>
+            <tbody><tr><td>Ramesh Kumar</td><td>3</td><td>23.67</td><td>1</td><td>32.0</td><td>On Track</td></tr><tr><td>Amit Sharma</td><td>3</td><td>27.0</td><td>2</td><td>32.0</td><td>On Track</td></tr><tr><td>Suresh Singh</td><td>3</td><td>35.0</td><td>3</td><td>32.0</td><td>Needs Improvement</td></tr><tr><td>Deepak Patel</td><td>3</td><td>42.33</td><td>4</td><td>32.0</td><td>Needs Improvement</td></tr></tbody>
+        </table>
+        <div class="row-count">4 row(s) in set</div>
+    </div>
+    
+            </div>
+        </div>
+
+        <!-- SECTION C - CAPSTONE -->
+        <div class="card" id="capstone">
+            <div class="card-header">
+                <div class="card-title">Capstone C.1: Restaurant Revenue Report (Filtered for COUNT > 3)</div>
+                <div class="tag">GROUP BY &bull; HAVING &bull; AGGREGATES</div>
+            </div>
+            <div class="card-body">
+                <div class="query-box"><pre>SELECT 
+    r.restaurant_id,
+    r.restaurant_name,
+    r.city,
+    COUNT(o.order_id) AS total_orders,
+    SUM(o.order_amount) AS total_revenue,
+    ROUND(AVG(o.order_amount), 2) AS avg_order_value
+FROM cap_restaurants r
+JOIN cap_orders o ON r.restaurant_id = o.restaurant_id
+GROUP BY r.restaurant_id, r.restaurant_name, r.city
+HAVING COUNT(o.order_id) > 3
+ORDER BY total_revenue DESC;</pre></div>
+                
+    <div class="table-container">
+        <table>
+            <thead><tr><th>restaurant_id</th><th>restaurant_name</th><th>city</th><th>total_orders</th><th>total_revenue</th><th>avg_order_value</th></tr></thead>
+            <tbody><tr><td>1</td><td>Trishna Seafood</td><td>Mumbai</td><td>5</td><td>11750.0</td><td>2350.0</td></tr></tbody>
+        </table>
+        <div class="row-count">1 row(s) in set</div>
+    </div>
+    
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Capstone C.2: Customer Lifetime Value Segmentation</div>
+                <div class="tag">CASE WHEN &bull; SPEND TIERS</div>
+            </div>
+            <div class="card-body">
+                <div class="query-box"><pre>SELECT 
+    c.customer_id,
+    c.customer_name,
+    c.city,
+    SUM(o.order_amount) AS total_spend,
+    COUNT(o.order_id) AS total_orders,
+    CASE 
+        WHEN SUM(o.order_amount) > 5000 THEN 'Platinum'
+        WHEN SUM(o.order_amount) >= 2000 THEN 'Gold'
+        ELSE 'Standard'
+    END AS customer_tier
+FROM cap_customers c
+JOIN cap_orders o ON c.customer_id = o.customer_id
+GROUP BY c.customer_id, c.customer_name, c.city
+ORDER BY total_spend DESC;</pre></div>
+                
+    <div class="table-container">
+        <table>
+            <thead><tr><th>customer_id</th><th>customer_name</th><th>city</th><th>total_spend</th><th>total_orders</th><th>customer_tier</th></tr></thead>
+            <tbody><tr><td>1</td><td>Aarav Patel</td><td>Mumbai</td><td>10050.0</td><td>5</td><td>Platinum</td></tr><tr><td>9</td><td>Aditya Rao</td><td>Bengaluru</td><td>7550.0</td><td>3</td><td>Platinum</td></tr><tr><td>2</td><td>Priya Sharma</td><td>Delhi</td><td>5700.0</td><td>2</td><td>Platinum</td></tr><tr><td>7</td><td>Karan Malhotra</td><td>Mumbai</td><td>4750.0</td><td>2</td><td>Gold</td></tr><tr><td>4</td><td>Sneha Joshi</td><td>Mumbai</td><td>4500.0</td><td>2</td><td>Gold</td></tr><tr><td>3</td><td>Rohan Verma</td><td>Bengaluru</td><td>3200.0</td><td>2</td><td>Gold</td></tr><tr><td>8</td><td>Neha Gupta</td><td>Delhi</td><td>2200.0</td><td>2</td><td>Gold</td></tr><tr><td>5</td><td>Vikram Mehta</td><td>Delhi</td><td>1100.0</td><td>1</td><td>Standard</td></tr><tr><td>6</td><td>Ananya Iyer</td><td>Bengaluru</td><td>850.0</td><td>1</td><td>Standard</td></tr></tbody>
+        </table>
+        <div class="row-count">9 row(s) in set</div>
+    </div>
+    
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Capstone C.3a: Top 3 Restaurants Per City Using DENSE_RANK()</div>
+                <div class="tag">DENSE_RANK() &bull; PARTITION BY city</div>
+            </div>
+            <div class="card-body">
+                <div class="query-box"><pre>WITH city_rev AS (
+    SELECT 
+        r.city,
+        r.restaurant_name,
+        SUM(o.order_amount) AS total_revenue
+    FROM cap_restaurants r
+    JOIN cap_orders o ON r.restaurant_id = o.restaurant_id
+    GROUP BY r.city, r.restaurant_name
+),
+ranked_rev AS (
+    SELECT 
+        city,
+        restaurant_name,
+        total_revenue,
+        DENSE_RANK() OVER (PARTITION BY city ORDER BY total_revenue DESC) AS city_rank
+    FROM city_rev
+)
+SELECT city, city_rank, restaurant_name, total_revenue
+FROM ranked_rev
+WHERE city_rank <= 3
+ORDER BY city ASC, city_rank ASC;</pre></div>
+                
+    <div class="table-container">
+        <table>
+            <thead><tr><th>city</th><th>city_rank</th><th>restaurant_name</th><th>total_revenue</th></tr></thead>
+            <tbody><tr><td>Bengaluru</td><td>1</td><td>Meghana Foods</td><td>7600.0</td></tr><tr><td>Bengaluru</td><td>2</td><td>Toit Brewpub</td><td>4000.0</td></tr><tr><td>Delhi</td><td>1</td><td>Bukhara Grand</td><td>4600.0</td></tr><tr><td>Delhi</td><td>2</td><td>Karim s Historic</td><td>3700.0</td></tr><tr><td>Delhi</td><td>3</td><td>Saravana Bhavan</td><td>700.0</td></tr><tr><td>Mumbai</td><td>1</td><td>Trishna Seafood</td><td>11750.0</td></tr><tr><td>Mumbai</td><td>2</td><td>Bademiya Kababs</td><td>3150.0</td></tr><tr><td>Mumbai</td><td>3</td><td>Khyber Afghan</td><td>2800.0</td></tr></tbody>
+        </table>
+        <div class="row-count">8 row(s) in set</div>
+    </div>
+    
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Capstone C.3b: Customer's Single Most Recent Order Using ROW_NUMBER()</div>
+                <div class="tag">ROW_NUMBER() &bull; PARTITION BY customer_id</div>
+            </div>
+            <div class="card-body">
+                <div class="query-box"><pre>WITH recent_orders AS (
+    SELECT 
+        o.order_id,
+        c.customer_id,
+        c.customer_name,
+        r.restaurant_name,
+        o.order_amount,
+        o.order_date,
+        ROW_NUMBER() OVER (
+            PARTITION BY c.customer_id 
+            ORDER BY o.order_date DESC, o.order_id DESC
+        ) AS rn
+    FROM cap_orders o
+    JOIN cap_customers c ON o.customer_id = c.customer_id
+    JOIN cap_restaurants r ON o.restaurant_id = r.restaurant_id
+)
+SELECT 
+    customer_id,
+    customer_name,
+    order_id AS most_recent_order_id,
+    restaurant_name,
+    order_amount,
+    order_date
+FROM recent_orders
+WHERE rn = 1
+ORDER BY customer_id ASC;</pre></div>
+                
+    <div class="table-container">
+        <table>
+            <thead><tr><th>customer_id</th><th>customer_name</th><th>most_recent_order_id</th><th>restaurant_name</th><th>order_amount</th><th>order_date</th></tr></thead>
+            <tbody><tr><td>1</td><td>Aarav Patel</td><td>120</td><td>Trishna Seafood</td><td>1500.0</td><td>2026-10-13</td></tr><tr><td>2</td><td>Priya Sharma</td><td>106</td><td>Karim s Historic</td><td>2200.0</td><td>2026-10-09</td></tr><tr><td>3</td><td>Rohan Verma</td><td>108</td><td>Meghana Foods</td><td>1800.0</td><td>2026-10-11</td></tr><tr><td>4</td><td>Sneha Joshi</td><td>110</td><td>Gajalee Coastal</td><td>1600.0</td><td>2026-10-12</td></tr><tr><td>5</td><td>Vikram Mehta</td><td>111</td><td>Bukhara Grand</td><td>1100.0</td><td>2026-10-08</td></tr><tr><td>6</td><td>Ananya Iyer</td><td>112</td><td>Toit Brewpub</td><td>850.0</td><td>2026-10-09</td></tr><tr><td>7</td><td>Karan Malhotra</td><td>114</td><td>Khyber Afghan</td><td>2800.0</td><td>2026-10-11</td></tr><tr><td>8</td><td>Neha Gupta</td><td>116</td><td>Saravana Bhavan</td><td>700.0</td><td>2026-10-10</td></tr><tr><td>9</td><td>Aditya Rao</td><td>119</td><td>Toit Brewpub</td><td>1750.0</td><td>2026-10-12</td></tr></tbody>
+        </table>
+        <div class="row-count">9 row(s) in set</div>
+    </div>
+    
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Capstone C.4 & C.5: Query vw_daily_order_summary for Last 7 Days</div>
+                <div class="tag">SQL VIEW &bull; 4-TABLE JOIN &bull; DATE FILTER</div>
+            </div>
+            <div class="card-body">
+                <div class="query-box"><pre>SELECT 
+    order_date,
+    customer_name,
+    restaurant_name,
+    agent_name,
+    order_amount,
+    delivery_time_mins
+FROM vw_daily_order_summary
+WHERE order_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+ORDER BY order_date DESC, order_amount DESC;</pre></div>
+                
+    <div class="table-container">
+        <table>
+            <thead><tr><th>order_date</th><th>customer_name</th><th>restaurant_name</th><th>agent_name</th><th>order_amount</th><th>delivery_time_mins</th></tr></thead>
+            <tbody><tr><td>2026-10-13</td><td>Aarav Patel</td><td>Trishna Seafood</td><td>Ramesh Kumar</td><td>1500.0</td><td>25</td></tr><tr><td>2026-10-12</td><td>Aarav Patel</td><td>Trishna Seafood</td><td>Vikram Singh</td><td>3100.0</td><td>28</td></tr><tr><td>2026-10-12</td><td>Aditya Rao</td><td>Toit Brewpub</td><td>Suresh Gowda</td><td>1750.0</td><td>24</td></tr><tr><td>2026-10-12</td><td>Sneha Joshi</td><td>Gajalee Coastal</td><td>Sunil Yadav</td><td>1600.0</td><td>22</td></tr><tr><td>2026-10-11</td><td>Aditya Rao</td><td>Meghana Foods</td><td>Karthik Raja</td><td>3200.0</td><td>30</td></tr><tr><td>2026-10-11</td><td>Karan Malhotra</td><td>Khyber Afghan</td><td>Ramesh Kumar</td><td>2800.0</td><td>33</td></tr><tr><td>2026-10-11</td><td>Rohan Verma</td><td>Meghana Foods</td><td>Manjunath R</td><td>1800.0</td><td>29</td></tr><tr><td>2026-10-10</td><td>Sneha Joshi</td><td>Trishna Seafood</td><td>Ramesh Kumar</td><td>2900.0</td><td>27</td></tr><tr><td>2026-10-10</td><td>Aarav Patel</td><td>Bademiya Kababs</td><td>Ramesh Kumar</td><td>1200.0</td><td>30</td></tr><tr><td>2026-10-10</td><td>Neha Gupta</td><td>Saravana Bhavan</td><td>Rajesh Gupta</td><td>700.0</td><td>23</td></tr><tr><td>2026-10-09</td><td>Aditya Rao</td><td>Meghana Foods</td><td>Manjunath R</td><td>2600.0</td><td>28</td></tr><tr><td>2026-10-09</td><td>Priya Sharma</td><td>Karim s Historic</td><td>Amit Verma</td><td>2200.0</td><td>32</td></tr><tr><td>2026-10-09</td><td>Aarav Patel</td><td>Trishna Seafood</td><td>Sunil Yadav</td><td>1850.0</td><td>24</td></tr><tr><td>2026-10-09</td><td>Ananya Iyer</td><td>Toit Brewpub</td><td>Suresh Gowda</td><td>850.0</td><td>20</td></tr><tr><td>2026-10-08</td><td>Aarav Patel</td><td>Trishna Seafood</td><td>Ramesh Kumar</td><td>2400.0</td><td>26</td></tr><tr><td>2026-10-08</td><td>Neha Gupta</td><td>Karim s Historic</td><td>Deepak Sharma</td><td>1500.0</td><td>45</td></tr><tr><td>2026-10-08</td><td>Rohan Verma</td><td>Toit Brewpub</td><td>Suresh Gowda</td><td>1400.0</td><td>25</td></tr><tr><td>2026-10-08</td><td>Vikram Mehta</td><td>Bukhara Grand</td><td>Amit Verma</td><td>1100.0</td><td>38</td></tr><tr><td>2026-10-07</td><td>Priya Sharma</td><td>Bukhara Grand</td><td>Amit Verma</td><td>3500.0</td><td>35</td></tr><tr><td>2026-10-07</td><td>Karan Malhotra</td><td>Bademiya Kababs</td><td>Vikram Singh</td><td>1950.0</td><td>41</td></tr></tbody>
+        </table>
+        <div class="row-count">20 row(s) in set</div>
+    </div>
+    
+            </div>
+        </div>
+
+        <!-- SECTION D -->
+        <div class="card" id="section-d">
+            <div class="card-header">
+                <div class="card-title">Section D: AI-Augmented Learning (Debugged & Corrected Output)</div>
+                <div class="tag">AI DEBUGGING &bull; PRE-FILTERING &bull; DENSE_RANK()</div>
+            </div>
+            <div class="card-body">
+                <div class="query-box"><pre>WITH qualifying_agents AS (
+    SELECT 
+        da.city,
+        da.agent_id,
+        da.agent_name,
+        COUNT(o.order_id) AS completed_orders,
+        ROUND(AVG(o.delivery_time_mins), 2) AS avg_delivery_time
+    FROM cap_delivery_agents da
+    INNER JOIN cap_orders o ON da.agent_id = o.agent_id
+    WHERE o.order_status = 'Delivered' 
+      AND o.delivery_time_mins IS NOT NULL
+    GROUP BY da.city, da.agent_id, da.agent_name
+    HAVING COUNT(o.order_id) >= 1
+),
+ranked_qualifying_agents AS (
+    SELECT 
+        city,
+        agent_id,
+        agent_name,
+        completed_orders,
+        avg_delivery_time,
+        DENSE_RANK() OVER (
+            PARTITION BY city 
+            ORDER BY completed_orders DESC, avg_delivery_time ASC
+        ) AS agent_rank
+    FROM qualifying_agents
+)
+SELECT 
+    city,
+    agent_id,
+    agent_name,
+    completed_orders,
+    avg_delivery_time,
+    agent_rank
+FROM ranked_qualifying_agents
+WHERE agent_rank <= 3
+ORDER BY city ASC, agent_rank ASC;</pre></div>
+                
+    <div class="table-container">
+        <table>
+            <thead><tr><th>city</th><th>agent_id</th><th>agent_name</th><th>completed_orders</th><th>avg_delivery_time</th><th>agent_rank</th></tr></thead>
+            <tbody><tr><td>Bengaluru</td><td>5</td><td>Suresh Gowda</td><td>3</td><td>23.0</td><td>1</td></tr><tr><td>Bengaluru</td><td>6</td><td>Manjunath R</td><td>2</td><td>28.5</td><td>2</td></tr><tr><td>Bengaluru</td><td>9</td><td>Karthik Raja</td><td>1</td><td>30.0</td><td>3</td></tr><tr><td>Delhi</td><td>3</td><td>Amit Verma</td><td>3</td><td>35.0</td><td>1</td></tr><tr><td>Delhi</td><td>8</td><td>Rajesh Gupta</td><td>1</td><td>23.0</td><td>2</td></tr><tr><td>Delhi</td><td>4</td><td>Deepak Sharma</td><td>1</td><td>45.0</td><td>3</td></tr><tr><td>Mumbai</td><td>1</td><td>Ramesh Kumar</td><td>5</td><td>28.2</td><td>1</td></tr><tr><td>Mumbai</td><td>2</td><td>Sunil Yadav</td><td>2</td><td>23.0</td><td>2</td></tr><tr><td>Mumbai</td><td>7</td><td>Vikram Singh</td><td>2</td><td>34.5</td><td>3</td></tr></tbody>
+        </table>
+        <div class="row-count">9 row(s) in set</div>
+    </div>
+    
+            </div>
+        </div>
+
+        <footer>
+            <p>TOPS Technologies &bull; Module 4 SQL for Data Analytics Assessment (M4-A1) &bull; Submitted by Nilesh Sharma</p>
+        </footer>
+    </div>
+</body>
+</html>
